@@ -1,0 +1,3 @@
+/home/yinp/devspace/mygit/gamedev/build/CMakeFiles/rebuild_cache.dir
+/home/yinp/devspace/mygit/gamedev/build/CMakeFiles/PlayGround.dir
+/home/yinp/devspace/mygit/gamedev/build/CMakeFiles/edit_cache.dir
