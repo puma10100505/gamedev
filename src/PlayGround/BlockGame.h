@@ -3,10 +3,15 @@
 #include "glm/glm.hpp"
 #include <unordered_map>
 #include <vector>
+#include <functional>
 
 extern "C" {
 #include "SDL2/SDL.h"
 }
+
+// typedef std::function<void(SDL_Scancode)> TKeyboardEventDelegator;
+
+using TKeyboardEventDelegator = std::function<void(const uint8_t*)>;
 
 class Actor
 {
@@ -28,13 +33,28 @@ public:
     inline void SetInstanceID(uint32_t InID) { InstanceID = InID; }
     const uint32_t GetInstanceID() const { return InstanceID; }
 
+    virtual bool Initialize() { return true; }
+    
+    virtual void Start() {
+        RegisterKeyboardEvent();
+    }
+
+    virtual void Update(float DeltaTime) {}
     virtual void Draw(SDL_Renderer* InRenderer);
+    virtual void Destroy() {}
+    inline void RegisterKeyboardEvent() {
+        KeyboardEventDelegator = std::bind(&Actor::OnKeyboardEvent, this, std::placeholders::_1);
+    }
+
+public:
+    virtual void OnKeyboardEvent(const uint8_t* KeyboardState){};
 
 protected:
     SDL_Rect Geometry;  // Position and Size
     glm::vec2 Position; // Position, need sync to Geometry
     uint32_t InstanceID;
-    
+
+    TKeyboardEventDelegator KeyboardEventDelegator;
 };
 
 // Static Actor
@@ -56,7 +76,9 @@ public:
     void SetVelocity(float vx, float vy);
     const glm::vec2& GetVelocity() const;
 
-    void Move(float Delta);
+    virtual void Move(float Delta);
+
+    virtual void Update(float DeltaTime) override;
 
 protected:
     glm::vec2 Velocity; // 2D Velocity
@@ -96,7 +118,10 @@ public:
 
     Actor* FindStaticActorByInstanceID(uint32_t InInstanceID);
     Character* FindDynamicActorByInstanceID(uint32_t InInstanceID);
+    inline std::vector<Actor*>& GetAllActors() { return AllActors; }
 
+    void Update(float DeltaTime);
+    void Draw(SDL_Renderer* Renderer);
     void Destroy();
 
 private:
@@ -108,15 +133,31 @@ private:
 class Engine
 {
 public:
-    Engine() {}
+    Engine(int32_t Tick, int32_t SWidth = 500, int32_t SHeight = 800): 
+        FixedTick(Tick), ScreenWidth(SWidth), ScreenHeight(SHeight) {}
     ~Engine() {}
 
 public:
     void Initialize();
-    void Startup();
-
+    void CreateWorld();
+    void Start();
+    void Run();
+    void UpdateWorld(float DeltaTime);
+    void DrawWorld();
     void Shutdown();
     
 private:
+    int32_t OnWindowEvent();
+    void OnKeyboardEvent();
 
+private:
+    int32_t ScreenWidth;
+    int32_t ScreenHeight;
+    SDL_Window* Window = nullptr;
+    SDL_Renderer* Renderer = nullptr;
+    World GameWorld;
+    uint32_t LastTickTime;
+    int32_t FixedTick;
+    bool Quit = false;
+    SDL_Event WindowEvent;
 };

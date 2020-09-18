@@ -153,6 +153,7 @@ int CreateSimpleSDL2Window(int, char**)
 
         // Keyboard event
         const uint8_t* KeyboardState = SDL_GetKeyboardState(nullptr);
+        
         if (KeyboardState[SDL_SCANCODE_A]) 
         {
             PadPlayer1.Direction = -1;

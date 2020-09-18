@@ -64,5 +64,6 @@
         "valarray": "cpp",
         "variant": "cpp",
         "unordered_set": "cpp"
-    }
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }
