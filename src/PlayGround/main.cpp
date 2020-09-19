@@ -2,6 +2,7 @@
 
 int main(int argc, char** argv)
 {
-    CreateSimpleSDL2Window(argc, argv);
+    BlockGame(argc, argv);
+    // CreateSimpleSDL2Window(argc, argv);
     return 0;
 }

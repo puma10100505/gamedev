@@ -78,12 +78,15 @@ uint32_t World::CreatePadCharacter(int x, int y, int w, int h)
     Pad->SetPosition(x, y);
     Pad->SetWidth(w);
     Pad->SetHeight(h);
+    Pad->SetSpeedFactor(200);
 
     uint32_t TempInstID = static_cast<uint32_t>(AllActors.size());
     Pad->SetInstanceID(TempInstID);
 
     AllActors.emplace_back(Pad);
     DynamicActors[TempInstID] = Pad;
+
+    Pad->SetWorld(this);
 
     return TempInstID;
 }
@@ -93,12 +96,16 @@ uint32_t World::CreateBallCharacter(int x, int y, int r)
     BallCharacter* Ball = new BallCharacter();
     Ball->SetPosition(x, y);
     Ball->SetRadius(r);
+    Ball->SetOriginPosition(glm::vec2(x, y));
+    Ball->SetVelocity(-200, -300);
 
     uint32_t TempInstID = static_cast<uint32_t>(AllActors.size());
     Ball->SetInstanceID(TempInstID);
 
     AllActors.emplace_back(Ball);
     DynamicActors[TempInstID] = Ball;
+
+    Ball->SetWorld(this);
 
     return TempInstID;
 }
@@ -115,6 +122,8 @@ uint32_t World::CreateWall(int x, int y, int w, int h)
 
     AllActors.emplace_back(Wall);
     StaticActors[TempInstID] = Wall;
+
+    Wall->SetWorld(this);
 
     return TempInstID;
 }
@@ -151,6 +160,13 @@ void World::Destroy()
     }
 }
 
+void World::Draw(SDL_Renderer* Renderer)
+{
+    for_each(AllActors.begin(), AllActors.end(), [&](Actor* ActorInst){
+        ActorInst->Draw(Renderer);
+    });
+}
+
 void Engine::Initialize() 
 {
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
@@ -182,6 +198,19 @@ void Engine::Initialize()
 void Engine::CreateWorld() 
 {
     // TODO: Create actors
+    // GameWorld.CreateBallCharacter()
+    GameWorld.SetEngine(this);
+
+    GameWorld.CreateBallCharacter(ScreenWidth / 2, ScreenHeight / 2, 6);
+    
+    GameWorld.CreatePadCharacter(ScreenWidth / 2, ScreenHeight - 60, 90, 6);
+    
+    GameWorld.CreateWall(0, 0, ScreenWidth, GameWorld.GetWallThinkness());
+    GameWorld.CreateWall(0, ScreenHeight - GameWorld.GetWallThinkness(), 
+        ScreenWidth, GameWorld.GetWallThinkness());
+    GameWorld.CreateWall(0, 0, GameWorld.GetWallThinkness(), ScreenHeight);
+    GameWorld.CreateWall(ScreenWidth - GameWorld.GetWallThinkness(), 0, 
+        GameWorld.GetWallThinkness(), ScreenHeight);
 }
 
 int32_t Engine::OnWindowEvent()
@@ -195,13 +224,18 @@ int32_t Engine::OnWindowEvent()
             return -1;
         }
     }
+
+    return 0;
 }
 
 void Engine::OnKeyboardEvent() 
 {
-    const uint8_t* KeyboardState = SDL_GetKeyboardState(nullptr);
-
     // TODO: Actor event manager for de-coupling
+    for_each(GameWorld.GetAllActors().begin(), GameWorld.GetAllActors().end(), [](Actor* ActorItem) {
+        const uint8_t* KS = SDL_GetKeyboardState(nullptr);
+        std::cout << "after get keyboard stat: " << *KS << std::endl;
+        ActorItem->OnKeyboardEvent(KS);
+    }); 
 }
 
 void Engine::Run() 
@@ -217,9 +251,7 @@ void Engine::Run()
         if (OnWindowEvent() < 0) continue;
 
         // Fool implementation, invoke every actor's keyboard process function
-        for_each(GameWorld.GetAllActors().begin(), GameWorld.GetAllActors().end(), [](Actor* ActorItem) {
-            ActorItem->OnKeyboardEvent(SDL_GetKeyboardState(nullptr));
-        }); 
+        OnKeyboardEvent();
 
         // Game Logic
         UpdateWorld(DeltaTime);
@@ -245,6 +277,8 @@ void Engine::UpdateWorld(float DeltaTime)
 
 void Engine::DrawWorld()
 {
+    SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
+    SDL_RenderClear(Renderer);
     GameWorld.Draw(Renderer);
 }
 
@@ -253,4 +287,126 @@ void Engine::Shutdown()
     SDL_DestroyRenderer(Renderer);
     SDL_DestroyWindow(Window);
     SDL_Quit();
+}
+
+void BallCharacter::Update(float DeltaTime) 
+{
+    Move(DeltaTime);
+
+    const glm::vec2& NewPos = GetPosition();
+
+    const World* CurrentWorld = GetWorld();
+    const Engine* CurrentEngine = GetWorld()->GetEngine();
+
+    if (NewPos.y < CurrentWorld->GetWallThinkness() && Velocity.y < 0)
+    {
+        Velocity.y *= -1;
+    }
+
+    if (NewPos.x < CurrentWorld->GetWallThinkness() && Velocity.x < 0)
+    {
+        Velocity.x *= -1;
+    }
+
+    if (NewPos.x >= CurrentEngine->GetScreenWidth() - CurrentWorld->GetWallThinkness() && 
+        Velocity.x > 0)
+    {
+        Velocity.x *= -1;
+    }
+
+    if (NewPos.y >= CurrentEngine->GetScreenHeight() - CurrentWorld->GetWallThinkness())
+    {
+       Reset();
+    }
+}
+
+void BallCharacter::Draw(SDL_Renderer* Renderer) 
+{
+    SDL_SetRenderDrawColor(Renderer, 255, 0, 255, 255);
+    // SDL_RenderClear(Renderer);
+    SDL_RenderFillRect(Renderer, &Geometry);
+}
+
+
+void PadCharacter::Update(float DeltaTime)
+{
+    Move(DeltaTime);
+
+    const World* CurrentWorld = GetWorld();
+    const Engine* CurrentEngine = GetWorld()->GetEngine();
+
+    const glm::vec2& NewPos = GetPosition();
+
+    std::cout << "pad new pos: " << NewPos.x << " " << NewPos.y << std::endl;
+
+    if (NewPos.x <= CurrentWorld->GetWallThinkness()) 
+    {
+        SetPosition(CurrentWorld->GetWallThinkness(), NewPos.y);
+    }
+
+    int32_t RightBound = CurrentEngine->GetScreenWidth() - Geometry.w - CurrentWorld->GetWallThinkness();
+    if (NewPos.x >= RightBound)
+    {
+        SetPosition(RightBound, NewPos.y);
+    }
+}
+
+void PadCharacter::Draw(SDL_Renderer* Renderer)
+{
+    SDL_SetRenderDrawColor(Renderer, 0, 0, 255, 255);
+    // SDL_RenderClear(Renderer);
+    SDL_RenderFillRect(Renderer, &Geometry);    
+}
+
+void PadCharacter::OnKeyboardEvent(const uint8_t* KeyboardState)
+{
+    Direction = 0;
+
+    std::cout << "entry of pad key board event" << *KeyboardState << std::endl;
+
+    if (KeyboardState[SDL_SCANCODE_A]) 
+    {
+        Direction = -1;
+    } 
+    
+    if (KeyboardState[SDL_SCANCODE_D])
+    {
+        Direction = 1;
+    }
+
+    Velocity.x = Direction * SpeedFactor;
+
+    std::cout << "after keyboard event v.x: " << Velocity.x << std::endl; 
+}
+
+void WallActor::Draw(SDL_Renderer* Renderer) 
+{
+    SDL_SetRenderDrawColor(Renderer, 0, 255, 0, 255);
+    // SDL_RenderClear(Renderer);
+    SDL_RenderFillRect(Renderer, &Geometry);
+}
+
+void World::Update(float DeltaTime) 
+{
+    for_each(GetAllActors().begin(), GetAllActors().end(), [&](Actor* ActorItem) {
+        ActorItem->Update(DeltaTime);
+    });
+}
+
+
+int BlockGame(int, char**) 
+{
+    Engine GameEngine(16);
+
+    GameEngine.Initialize();
+
+    GameEngine.CreateWorld();
+
+    GameEngine.Start();
+
+    GameEngine.Run();
+
+    GameEngine.Shutdown();
+
+    return 0;
 }
