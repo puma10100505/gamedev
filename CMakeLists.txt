@@ -57,7 +57,6 @@ TARGET_LINK_LIBRARIES(
 	-lGL
 	-lX11
 	-lGLU
-	-lGLEW
 	-lSDL2
 	)
 
