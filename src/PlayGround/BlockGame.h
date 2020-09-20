@@ -38,6 +38,8 @@ public:
     virtual void Start() {
         RegisterKeyboardEvent();
     }
+    
+    inline const SDL_Rect& GetGeometry() const { return Geometry; }
 
     virtual void Update(float DeltaTime) {}
     virtual void Draw(SDL_Renderer* InRenderer);
@@ -158,6 +160,7 @@ public:
     inline void SetEngine(class Engine* InEng) { Owner = InEng; }
     inline const class Engine* GetEngine() const { return Owner; } 
     inline int32_t GetWallThinkness() const { return WallThinkness; }
+    inline PadCharacter* GetThePad() const { return MainPadCharacter; }
 
 private:
     std::unordered_map<uint32_t, Character*> DynamicActors;
@@ -165,6 +168,7 @@ private:
     std::vector<Actor*> AllActors;
     class Engine* Owner = nullptr;
     int32_t WallThinkness = 6;
+    PadCharacter* MainPadCharacter;
 };
 
 class Engine

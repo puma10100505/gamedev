@@ -7,7 +7,7 @@ PROJECT(GameDev)
 SET(ProjectName PlayGround)
 
 SET(BinName ${ProjectName})
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -g -O2")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -std=c++11 -Wall -g")
 
 SET(SolutionRoot ${CMAKE_CURRENT_SOURCE_DIR}/)
 SET(ProjectRoot ${CMAKE_CURRENT_SOURCE_DIR}/src/${ProjectName})
@@ -58,6 +58,7 @@ TARGET_LINK_LIBRARIES(
 	-lX11
 	-lGLU
 	-lSDL2
+	-lGLEW
 	)
 
 MESSAGE(${CMAKE_BINARY_DIR})

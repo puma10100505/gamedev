@@ -80,6 +80,8 @@ uint32_t World::CreatePadCharacter(int x, int y, int w, int h)
     Pad->SetHeight(h);
     Pad->SetSpeedFactor(200);
 
+    MainPadCharacter = Pad;
+
     uint32_t TempInstID = static_cast<uint32_t>(AllActors.size());
     Pad->SetInstanceID(TempInstID);
 
@@ -318,6 +320,12 @@ void BallCharacter::Update(float DeltaTime)
     {
        Reset();
     }
+
+    SDL_Rect HitInfo;
+    if (SDL_IntersectRect(&Geometry, &(GetWorld()->GetThePad()->GetGeometry()), &HitInfo)) 
+    {
+        Velocity.y *= -1;
+    }
 }
 
 void BallCharacter::Draw(SDL_Renderer* Renderer) 
@@ -381,8 +389,7 @@ void PadCharacter::OnKeyboardEvent(const uint8_t* KeyboardState)
 
 void WallActor::Draw(SDL_Renderer* Renderer) 
 {
-    SDL_SetRenderDrawColor(Renderer, 0, 255, 0, 255);
-    // SDL_RenderClear(Renderer);
+    SDL_SetRenderDrawColor(Renderer, 0, 255, 0, 255);    
     SDL_RenderFillRect(Renderer, &Geometry);
 }
 

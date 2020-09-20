@@ -50,3 +50,4 @@ using namespace gl;
 int SimpleWindow(int, char**);
 int CreateSimpleSDL2Window(int, char**);
 int BlockGame(int, char**);
+int BlockGameECS(int, char**);
