@@ -2,86 +2,108 @@
 
 #include "PlayGround.h"
 #include <iostream>
+#include <memory>
 #include <algorithm>
 #include <vector>
 #include <unordered_map>
 #include "macro.h"
 #include "glm/glm.hpp"
 
-class Actor 
+
+class UActorComponent;
+
+class AActor 
 {
 public:
-    enum State 
+    enum EActorState 
     {
         EActive,
         EPaused,
         EDead
     };
 
-    Actor(class World* OwningWorld): world_(OwningWorld) {}
-    virtual ~Actor() {}
+    AActor(class UWorld* InWorld): World(InWorld) {
+        std::cout << "constructor of Actor class" << std::endl;
+    }
+
+    virtual ~AActor() {
+        std::cout << "destructor of Actor class" << std::endl;
+    }
 
     virtual void BeginPlay(){}
     void Update(float DeltaTime);
     void UpdateComponent(float DeltaTime);
     virtual void UpdateActor(float DeltaTime){}
 
-    inline int32_t CountOfComponent() { return static_cast<int32_t>(components.size()); }
-    void AddComponent(class ActorComponent* Component);
-    void RemoveComponent(class ActorComponent* Component);
+    inline int32_t CountOfComponent() { return components.size(); }
+    
+    template<typename T>
+    inline void AddComponent(); // { components.emplace_back(std::make_unique<T>()); }
+
+    void RemoveComponent(class UActorComponent* Component);
     
     template<typename T>
     T* FindComponent();
 
-protected:
-    GETSETPTR(class World, world);
-    GETSETVAR(State, state, State::EActive);
+    inline UWorld* GetWorld() { return World.get(); }
 
+public:
+    std::shared_ptr<UWorld> World;
+    GETSETVAR(EActorState, State, EActorState::EActive);
 
     /* Transform */
     GETSETVAR(glm::vec2, position, glm::vec2(0, 0));
     GETSETVAR(float, scale, 1.f);
     GETSETVAR(float, rotation, 0.f);
 
-    std::vector<class ActorComponent*> components;
-    
+    std::vector<std::unique_ptr<class UActorComponent>> components;   
 };
 
 
 /*--------------- Components --------------------*/
-class ActorComponent
+class UActorComponent
 {
 public:
-    ActorComponent() {}
-    virtual ~ActorComponent() {}
+    static int32_t ComponentCategory;
 
-    virtual void Update(float DeltaTime){}
+    UActorComponent() {}
+    virtual ~UActorComponent() {}
+
+    virtual void Update(float DeltaTime) {}
+
+    inline AActor* GetOwner() { return Owner.get(); }
+    inline void SetOwner(AActor* OwnerActor) { Owner.reset(OwnerActor); }
+
+protected:
+    std::shared_ptr<AActor> Owner;
 };
 
-class TransformComponent: public ActorComponent
+class UTransformComponent: public UActorComponent
 {
 public: 
-    TransformComponent(){}
-    virtual ~TransformComponent(){}
+    UTransformComponent(){}
+    virtual ~UTransformComponent(){
+        std::cout << "destructor of TransformComponent class" << std::endl;
+    }
 
     void Update(float DeltaTime) override {}
     
 };
 
-class MovementComponent: public ActorComponent 
+class UMovementComponent: public UActorComponent 
 {
 public:
-    MovementComponent(){}
-    virtual ~MovementComponent() {}
+    UMovementComponent(){}
+    virtual ~UMovementComponent() {}
 
     void Update(float DeltaTime) override {}
 };
 
-class RendererComponent: public ActorComponent
+class URendererComponent: public UActorComponent
 {
 public:
-    RendererComponent() {}
-    virtual ~RendererComponent(){}
+    URendererComponent() {}
+    virtual ~URendererComponent(){}
 
     void Update(float DeltaTime) override {}
 };
@@ -89,12 +111,16 @@ public:
 /* --------------------------------------------- */
 
 
-class World 
+class UWorld 
 {
 public:
+    UWorld(){}
+    ~UWorld() {}
+    
+    void AddComponent();
 
 private:
-
+    std::unordered_map<uint32_t, std::vector<std::unique_ptr<UActorComponent>>> ComponentMap;
 };
 
 class Engine 
