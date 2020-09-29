@@ -9,6 +9,7 @@
 #include "macro.h"
 #include "glm/glm.hpp"
 
+const static int CT_TRANSFORM_COMPONENT = 0x01;
 
 class UActorComponent;
 
@@ -22,7 +23,8 @@ public:
         EDead
     };
 
-    AActor(class UWorld* InWorld): World(InWorld) {
+    AActor(std::shared_ptr<class UWorld>& InWorld) {
+        World = InWorld;
         std::cout << "constructor of Actor class" << std::endl;
     }
 
@@ -56,16 +58,18 @@ public:
     GETSETVAR(float, scale, 1.f);
     GETSETVAR(float, rotation, 0.f);
 
-    std::vector<std::unique_ptr<class UActorComponent>> components;   
+    std::vector<std::shared_ptr<class UActorComponent>> components;   
 };
 
+#define UACTORCOMPONENT_TYPE(type)                                                              \
+public:                                                                                         \
+    static inline int32_t GetStaticComponentType() { return type; }                             \
+    virtual int32_t GetComponentType() const override { return GetStaticComponentType(); }        
 
 /*--------------- Components --------------------*/
 class UActorComponent
 {
 public:
-    static int32_t ComponentCategory;
-
     UActorComponent() {}
     virtual ~UActorComponent() {}
 
@@ -74,12 +78,15 @@ public:
     inline AActor* GetOwner() { return Owner.get(); }
     inline void SetOwner(AActor* OwnerActor) { Owner.reset(OwnerActor); }
 
+    virtual int32_t GetComponentType() const { return 0; }
+
 protected:
     std::shared_ptr<AActor> Owner;
 };
 
 class UTransformComponent: public UActorComponent
 {
+    UACTORCOMPONENT_TYPE(CT_TRANSFORM_COMPONENT)
 public: 
     UTransformComponent(){}
     virtual ~UTransformComponent(){
@@ -110,17 +117,33 @@ public:
 
 /* --------------------------------------------- */
 
+template<typename T>
+using FComponentList = std::vector<std::shared_ptr<T>>;
+
+template<typename T>
+using FWorldComponentMap = std::unordered_map<uint32_t, FComponentList<T>>;
+
 
 class UWorld 
 {
+    static uint32_t ActorId;
 public:
     UWorld(){}
     ~UWorld() {}
     
-    void AddComponent();
+    template<typename T>
+    void AddComponent(std::shared_ptr<T> NewComp);
+
+    template<typename T>
+    void FindComponentsOfType(FComponentList<T>& components);
+
+    void Update();
+    void Initialize();
+    void Destroy();
 
 private:
-    std::unordered_map<uint32_t, std::vector<std::unique_ptr<UActorComponent>>> ComponentMap;
+    FWorldComponentMap<UActorComponent> ComponentMap;
+    std::unordered_map<uint32_t, std::weak_ptr<AActor>> ActorMap;
 };
 
 class Engine 
