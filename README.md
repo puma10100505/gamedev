@@ -1,2 +1,2 @@
-- Game tech lab
+- Game tech lab...
 - Contains imgui, glfw/glad/glew, ode, all the library were installed in system, the zip file is in thirdparty
