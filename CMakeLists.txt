@@ -12,7 +12,7 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -g -O2")
 SET(SolutionRoot ${CMAKE_CURRENT_SOURCE_DIR}/)
 SET(ProjectRoot ${CMAKE_CURRENT_SOURCE_DIR}/src/${ProjectName})
 
-# test
+# tesffft
 FILE(GLOB SourceFiles     
 	${ProjectRoot}/*.cpp
 	${SolutionRoot}/src/glad.c
