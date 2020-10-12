@@ -8,6 +8,11 @@
 #include <unordered_map>
 #include "macro.h"
 #include "glm/glm.hpp"
+#include <functional>
+
+extern "C" {
+#include "SDL2/SDL.h"
+}
 
 const static int CT_TRANSFORM_COMPONENT = 0x01;
 
@@ -130,6 +135,8 @@ class UWorld
 public:
     UWorld(){}
     ~UWorld() {}
+
+    void Start();
     
     template<typename T>
     void AddComponent(std::shared_ptr<T> NewComp);
@@ -141,6 +148,8 @@ public:
     void Initialize();
     void Destroy();
 
+    void Draw(SDL_Renderer* Renderer);
+
 private:
     FWorldComponentMap<UActorComponent> ComponentMap;
     std::unordered_map<uint32_t, std::weak_ptr<AActor>> ActorMap;
@@ -149,7 +158,32 @@ private:
 class Engine 
 {
 public:
+    Engine(){}
+    ~Engine(){}
+
+    void Initialize();
+    void Run();
+    void Shutdown();
+    void CreateWorld();
 
 private:
+    void Start();
+    void Update(float DeltaTime);
 
+    void Draw();
+
+private:
+    int32_t OnWindowEvent();
+    void OnKeyboardEvent();
+
+private:
+    std::shared_ptr<UWorld> World;
+    int32_t ScreenWidth;
+    int32_t ScreenHeight;
+    SDL_Window* Window = nullptr;
+    SDL_Renderer* Renderer = nullptr;
+    uint32_t LastTickTime;
+    int32_t FixedTick;
+    bool Quit = false;
+    SDL_Event WindowEvent;
 };

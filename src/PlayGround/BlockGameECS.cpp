@@ -93,6 +93,90 @@ void UWorld::FindComponentsOfType(FComponentList<T>& components)
 
 // ------------------------------------
 
+void Engine::Initialize() 
+{
+    if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+    {
+        std::cout << "init sdl failed" << std::endl;
+        return;
+    }
+
+    LastTickTime = SDL_GetTicks();
+
+    Window = SDL_CreateWindow("Block Game", 
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, ScreenWidth, ScreenHeight
+        , SDL_WINDOW_ALLOW_HIGHDPI);
+    if (Window == nullptr)
+    {
+        std::cout << "init window failed" << std::endl;
+        return;
+    }
+
+    Renderer = SDL_CreateRenderer(Window, -1, 
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (Renderer == nullptr)
+    {
+        std::cout << "create renderer failed" << std::endl;
+        return;
+    }
+}
+
+void Engine::CreateWorld() 
+{
+
+}
+
+int32_t Engine::OnWindowEvent()
+{
+    if (SDL_PollEvent(&WindowEvent))
+    {
+        if (WindowEvent.type == SDL_QUIT)
+        {
+            std::cout << "SDL Quit" << std::endl;
+            Quit = true;
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+void Engine::OnKeyboardEvent() 
+{
+
+}
+
+void Engine::Run() 
+{
+
+}
+
+void Engine::Start()
+{
+
+}
+
+void Engine::Update(float DeltaTime)
+{
+
+}
+
+void Engine::Draw() 
+{
+    SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
+    SDL_RenderClear(Renderer);
+    World->Draw(Renderer);
+}
+
+void Engine::Shutdown() 
+{
+    SDL_DestroyRenderer(Renderer);
+    SDL_DestroyWindow(Window);
+    SDL_Quit();
+}
+
+// ------------------------------------
+
 int BlockGameECS(int, char**) 
 {
     std::shared_ptr<UWorld> world = std::make_shared<UWorld>();
